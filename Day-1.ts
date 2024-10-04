@@ -23,7 +23,11 @@ class Tube {
     const b2: Building = this.getBuilding(this.buildingId2);
 
     const isLegal = this.isLegal(b1, b2, resources);
-    if(isLegal === false) return;
+    if(isLegal === false){
+      console.error(`Tube not created between building ${b1.id_} and building ${b2.id_}`)
+      transportLines.pop();
+      return;
+    }
 
     this.connectTubes(b1, b2);
 
@@ -40,8 +44,6 @@ class Tube {
   isLegal(b1: Building, b2: Building, resources: number): boolean {
     if(this.canConnect(b1, b2) && this.canAfford(resources, b1, b2) && !this.segmentsIntersect(b1, b2) && !this.pointOnSegment(b1, b2)) return true;
     else {
-      console.error(`Tube not created between building ${b1.id_} and building ${b2.id_}`)
-      transportLines.pop();
       return false;
     }
   }
@@ -116,6 +118,9 @@ class Pod {
   build(){
 
   }
+  changePath(){
+    
+  }
   destroy(){
 
   }
@@ -178,14 +183,13 @@ type BuildingsArray = Buildings[];
 const buildings: BuildingsArray = []; 
 
 // game functions
-function wasAdded(originalCount: number): boolean{
-  return(transportLines.length > originalCount);
-}
+
 // game loop
 while (true) {
   let resources: number = parseInt(readline());
 
   let numTravelRoutes: number = parseInt(readline());
+  const upgradedTubes: number[] = [];
   for (let i = 0; i < numTravelRoutes; i++) {
     let inputs: string[] = readline().split(' ');
     const buildingId1: number = parseInt(inputs[0]);
@@ -216,14 +220,19 @@ while (true) {
   }
 
   let actions: string = '';
-  let actionType: string;
 
   while(numTravelRoutes < transportLines.length){
     const addition = transportLines[numTravelRoutes]
     if(addition instanceof Tube) actions += `TUBE ${addition.buildingId1} ${addition.buildingId2};`;
-    else if(addition instanceof Teleporter) actionType = `TELEPORT ${addition.buildingIdEntrance} ${addition.buildingIdExit};`;
+    else if(addition instanceof Teleporter) actions = `TELEPORT ${addition.buildingIdEntrance} ${addition.buildingIdExit};`;
     else throw new Error(`transportLines[numTravelRoutes] not an instance of Tube or Teleporter: ${transportLines[numTravelRoutes]}`);
     numTravelRoutes++;
+  }
+  for(let i = 0; i < upgradedTubes.length; i++){
+    const tube = transportLines[i];
+    if(tube instanceof Tube){
+      actions += `UPGRADE ${tube.buildingId1} ${tube.buildingId2};`
+    } else throw new Error(`Upgraded Tube at transportLines[${i}] is not of type Tube: ${tube}`)
   }
   for(let i = 0; i < destroyedPods.length; i++){
     actions += `DESTROY ${destroyedPods[i]};`;
