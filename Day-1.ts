@@ -1,5 +1,6 @@
 const MAX_TUBES: number = 5;
 const POD_COST: number = 1000;
+const POD_RETURN: number = 750;
 const TELEPORTER_COST: number = 5000;
 
 class Tube {
@@ -17,22 +18,16 @@ class Tube {
 
       this.build(resources);
   }
-  build(resources: number): boolean{
+  build(resources: number): void{
     const b1: Building = this.getBuilding(this.buildingId1);
     const b2: Building = this.getBuilding(this.buildingId2);
 
     const isLegal = this.isLegal(b1, b2, resources);
-
-    if(isLegal === false){
-      console.error(`Tube not created between building ${b1.id_} and building ${b2.id_}`)
-      transportLines.pop();
-      return isLegal; 
-    }
+    if(isLegal === false) return;
 
     this.connectTubes(b1, b2);
 
     console.error(`Tube created between building ${b1.id_} and building ${b2.id_}`);
-    return isLegal;
   }
   getBuilding(id_: number): Building{
     const building: Building | undefined = buildings.find(building => building.id_ === id_);
@@ -44,7 +39,11 @@ class Tube {
   }
   isLegal(b1: Building, b2: Building, resources: number): boolean {
     if(this.canConnect(b1, b2) && this.canAfford(resources, b1, b2) && !this.segmentsIntersect(b1, b2) && !this.pointOnSegment(b1, b2)) return true;
-    else return false;
+    else {
+      console.error(`Tube not created between building ${b1.id_} and building ${b2.id_}`)
+      transportLines.pop();
+      return false;
+    }
   }
   canConnect(b1: Building, b2: Building): boolean{
     if(b1.connectedTubes + 1 > MAX_TUBES || b2.connectedTubes + 1 > MAX_TUBES){
@@ -178,10 +177,15 @@ type Buildings = LunarModule | LandingPad;
 type BuildingsArray = Buildings[];
 const buildings: BuildingsArray = []; 
 
+// game functions
+function wasAdded(originalCount: number): boolean{
+  return(transportLines.length > originalCount);
+}
 // game loop
 while (true) {
   let resources: number = parseInt(readline());
-  const numTravelRoutes: number = parseInt(readline());
+
+  let numTravelRoutes: number = parseInt(readline());
   for (let i = 0; i < numTravelRoutes; i++) {
     let inputs: string[] = readline().split(' ');
     const buildingId1: number = parseInt(inputs[0]);
@@ -195,23 +199,48 @@ while (true) {
     }
     else {
       transportLines.push(new Teleporter(i, buildingId1, buildingId2))
-      if (!(transportLines[i] instanceof Teleporter)) throw new Error(`Expected Tube, but got ${typeof transportLines[i]} at index ${i}`);
+      if (!(transportLines[i] instanceof Teleporter)) throw new Error(`Expected Teleporter, but got ${typeof transportLines[i]} at index ${i}`);
       resources -= (transportLines[i] as Teleporter).cost;
     }
   }
-  const numPods: number = parseInt(readline());
+
+  let numPods: number = parseInt(readline());
+  const destroyedPods: number[] = [];
   for (let i = 0; i < numPods; i++) {
       const podProperties: string = readline();
   }
+
   const numNewBuildings: number = parseInt(readline());
   for (let i = 0; i < numNewBuildings; i++) {
       const buildingProperties: string = readline();
   }
-  let actions: string = '';
 
+  let actions: string = '';
+  let actionType: string;
+
+  while(numTravelRoutes < transportLines.length){
+    const addition = transportLines[numTravelRoutes]
+    if(addition instanceof Tube) actions += `TUBE ${addition.buildingId1} ${addition.buildingId2};`;
+    else if(addition instanceof Teleporter) actionType = `TELEPORT ${addition.buildingIdEntrance} ${addition.buildingIdExit};`;
+    else throw new Error(`transportLines[numTravelRoutes] not an instance of Tube or Teleporter: ${transportLines[numTravelRoutes]}`);
+    numTravelRoutes++;
+  }
+  for(let i = 0; i < destroyedPods.length; i++){
+    actions += `DESTROY ${destroyedPods[i]};`;
+  }
+  while(numPods < transportPods.length){
+    actions += `POD ${transportPods[numPods]}`
+    for(let i = 0; i < transportPods[numPods].path.length; i++){
+      actions += ` ${transportPods[numPods].path[i]}`
+    }
+    actions += ';'
+    numPods++;
+  }
+  if(actions === '') actions = 'WAIT;';
+  actions = actions.slice(0, -1);
   // Write an action using console.log()
   // To debug: console.error('Debug messages...');
 
-  console.log('TUBE 0 1;TUBE 0 2;POD 42 0 1 0 2 0 1 0 2');     // TUBE | UPGRADE | TELEPORT | POD | DESTROY | WAIT
+  console.log(actions);     // TUBE | UPGRADE | TELEPORT | POD | DESTROY | WAIT
 
 }
