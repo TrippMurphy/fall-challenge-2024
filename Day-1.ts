@@ -22,12 +22,8 @@ class Tube {
     const b1: Building = this.getBuilding(this.buildingId1);
     const b2: Building = this.getBuilding(this.buildingId2);
 
-    const isLegal = this.isLegal(b1, b2, resources);
-    if(isLegal === false){
-      console.error(`Tube not created between building ${b1.id_} and building ${b2.id_}`)
-      transportLines.pop();
-      return;
-    }
+    const isLegal: boolean = this.isLegal(b1, b2, resources);
+    if(isLegal === false) return;
 
     this.connectTubes(b1, b2);
 
@@ -42,8 +38,11 @@ class Tube {
     return Math.sqrt((b2.x - b1.x) ** 2 + (b2.y - b1.y) ** 2)
   }
   isLegal(b1: Building, b2: Building, resources: number): boolean {
+    transportLines.push(this);
     if(this.canConnect(b1, b2) && this.canAfford(resources, b1, b2) && !this.segmentsIntersect(b1, b2) && !this.pointOnSegment(b1, b2)) return true;
     else {
+      console.error(`Tube not created between building ${b1.id_} and building ${b2.id_}`)
+      transportLines.pop();
       return false;
     }
   }
@@ -106,6 +105,31 @@ class Tube {
       return this.calculateCost();
   }
 }
+class Teleporter {
+  id_: number;
+  cost: number;
+  buildingIdEntrance: number;
+  buildingIdExit: number;
+  constructor(id_: number, buildingIdEntrance: number, buildingIdExit: number, resources: number){
+      this.id_ = id_;
+      this.cost = TELEPORTER_COST;
+      this.buildingIdEntrance = buildingIdEntrance;
+      this.buildingIdExit = buildingIdExit;
+
+      this.build(resources)
+  }
+  build(resources: number): void{
+    const b1: Building = this.getBuilding(this.buildingIdEntrance);
+    const b2: Building = this.getBuilding(this.buildingIdExit);
+    
+    const isLegal: boolean = this.isLegal()
+  }
+  getBuilding(id_: number): Building{
+    const building: Building | undefined = buildings.find(building => building.id_ === id_);
+    if(!building) throw new Error(`Building ${id_} connected to Teleporter ${this.id_} not found`);
+    return building;
+  }
+}
 class Pod {
   id_: number;
   cost: number;
@@ -119,24 +143,9 @@ class Pod {
 
   }
   changePath(){
-    
-  }
-  destroy(){
 
   }
-}
-class Teleporter {
-  id_: number;
-  cost: number;
-  buildingIdExit: number;
-  buildingIdEntrance: number;
-  constructor(id_: number, buildingIdEntrance: number, buildingIdExit: number){
-      this.id_ = id_;
-      this.cost = TELEPORTER_COST;
-      this.buildingIdExit = buildingIdExit;
-      this.buildingIdEntrance = buildingIdEntrance;
-  }
-  build(){
+  destroy(){
 
   }
 }
@@ -202,7 +211,7 @@ while (true) {
       resources -= (transportLines[i] as Tube).calculateCost();
     }
     else {
-      transportLines.push(new Teleporter(i, buildingId1, buildingId2))
+      transportLines.push(new Teleporter(i, buildingId1, buildingId2, resources))
       if (!(transportLines[i] instanceof Teleporter)) throw new Error(`Expected Teleporter, but got ${typeof transportLines[i]} at index ${i}`);
       resources -= (transportLines[i] as Teleporter).cost;
     }
