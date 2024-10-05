@@ -1,3 +1,15 @@
+// stored data
+type TransportLines = Tube | Teleporter;
+type TransportLinesArray = TransportLines[];
+const transportLines: TransportLinesArray = [];
+
+type TransportPodArray = Pod[];
+const transportPods: TransportPodArray = [];
+
+type Buildings = LunarModule | LandingPad;
+type BuildingsArray = Buildings[];
+const buildings: BuildingsArray = []; 
+
 const MAX_TUBES: number = 5;
 const POD_COST: number = 1000;
 const POD_RETURN: number = 750;
@@ -38,13 +50,12 @@ class Tube {
     return Math.sqrt((b2.x - b1.x) ** 2 + (b2.y - b1.y) ** 2)
   }
   isLegal(b1: Building, b2: Building, resources: number): boolean {
-    transportLines.push(this);
-    if(this.canConnect(b1, b2) && this.canAfford(resources, b1, b2) && !this.segmentsIntersect(b1, b2) && !this.pointOnSegment(b1, b2)) return true;
-    else {
-      console.error(`Tube not created between building ${b1.id_} and building ${b2.id_}`)
-      transportLines.pop();
-      return false;
+    if(this.canConnect(b1, b2) && this.canAfford(resources, b1, b2) && !this.segmentsIntersect(b1, b2) && !this.pointOnSegment(b1, b2)){
+      transportLines.push(this);
+      return true;
     }
+    console.error(`Tube cannot be created between building ${b1.id_} and building ${b2.id_}`)
+    return false;
   }
   canConnect(b1: Building, b2: Building): boolean{
     if(b1.connectedTubes + 1 > MAX_TUBES || b2.connectedTubes + 1 > MAX_TUBES){
@@ -122,12 +133,31 @@ class Teleporter {
     const b1: Building = this.getBuilding(this.buildingIdEntrance);
     const b2: Building = this.getBuilding(this.buildingIdExit);
     
-    const isLegal: boolean = this.isLegal()
+    const isLegal: boolean = this.isLegal(b1, b2, resources);
+    if(isLegal === false) return;
+
+
   }
   getBuilding(id_: number): Building{
     const building: Building | undefined = buildings.find(building => building.id_ === id_);
     if(!building) throw new Error(`Building ${id_} connected to Teleporter ${this.id_} not found`);
     return building;
+  }
+  isLegal(b1: Building, b2: Building, resources: number): boolean{
+    if(this.canConnect(b1, b2) && this.canAfford(resources)){
+      transportLines.push(this)
+      return true;
+    }
+    console.error(`Teleporter cannot be created between building ${b1.id_} and building ${b2.id_}`)
+    return false;
+  }
+  canConnect(b1: Building, b2: Building): boolean{
+    if(!b1.hasTeleporter && !b2.hasTeleporter) return true;
+    return false;
+  }
+  canAfford(resources: number): boolean{
+    if(resources >= this.cost) return true;
+    return false;
   }
 }
 class Pod {
@@ -153,8 +183,8 @@ class Building {
   id_: number;
   x: number;
   y: number;
-  hasTeleporter: boolean;
   connectedTubes: number;
+  hasTeleporter: boolean;
   constructor(){
     this.id_ = 0;
     this.x = 0;
@@ -177,19 +207,6 @@ class LunarModule extends Building {
 class LandingPad extends Building {
 
 }
-
-
-// stored data
-type TransportLines = Tube | Teleporter;
-type TransportLinesArray = TransportLines[];
-const transportLines: TransportLinesArray = [];
-
-type TransportPodArray = Pod[];
-const transportPods: TransportPodArray = [];
-
-type Buildings = LunarModule | LandingPad;
-type BuildingsArray = Buildings[];
-const buildings: BuildingsArray = []; 
 
 // game functions
 
