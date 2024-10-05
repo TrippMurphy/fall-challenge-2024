@@ -136,7 +136,10 @@ class Teleporter {
     const isLegal: boolean = this.isLegal(b1, b2, resources);
     if(isLegal === false) return;
 
+    b1.hasTeleporter = true;
+    b2.hasTeleporter = true;
 
+    console.error(`Teleporter created between building ${b1.id_} and building ${b2.id_}`);
   }
   getBuilding(id_: number): Building{
     const building: Building | undefined = buildings.find(building => building.id_ === id_);
@@ -164,16 +167,33 @@ class Pod {
   id_: number;
   cost: number;
   path: number[];
-  constructor(){
+  constructor(id_: number, path: number[]){
       this.id_ = 0;
       this.cost = POD_COST;
       this.path = [];
+
+      this.build();
   }
   build(){
 
   }
+  isLegal(){
+
+  }
+  canAfford(){
+
+  }
+  existsTubes(){
+
+  }
+  existsCapacity(){
+
+  }
   changePath(){
 
+  }
+  updatePath(){
+    
   }
   destroy(){
 
